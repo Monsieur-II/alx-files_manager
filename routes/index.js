@@ -6,6 +6,7 @@ const router = express.Router();
 const AppController = require('../controllers/AppController');
 const UsersController = require('../controllers/UsersController');
 const AuthController = require('../controllers/AuthController');
+const FilesController = require('../controllers/FilesController');
 
 // middlewares
 const { basicAuth, bearerAuth } = require('../middlewares/auth');
@@ -16,5 +17,6 @@ router.post('/users', UsersController.postNew);
 router.get('/connect', basicAuth, AuthController.getConnect);
 router.get('/disconnect', bearerAuth, AuthController.getDisconnect);
 router.get('/users/me', bearerAuth, AuthController.getMe);
+router.post('/files', bearerAuth, FilesController.postUpload);
 
 module.exports = router;

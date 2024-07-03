@@ -44,6 +44,17 @@ class DBClient {
       .collection('users')
       .findOne({ _id: new mongoDBCore.BSON.ObjectId(id) });
   }
+
+  async getFileById(id) {
+    return this.client
+      .db()
+      .collection('files')
+      .findOne({ _id: new mongoDBCore.BSON.ObjectId(id) });
+  }
+
+  async addFile(data) {
+    return this.client.db().collection('files').insertOne(data);
+  }
 }
 
 const dbClient = new DBClient();
