@@ -1,8 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
 const dbClient = require('../utils/db');
-const { saveFileToDisk } = require('../utils/helpers');
+const { saveFileToDisk, getFileData } = require('../utils/helpers');
 
-const FOLDER_PATH = process.env.FOLDER_PATH || '/Users/monsieur/files_manager';
+const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
 
 class FileUploadRequest {
   constructor(name, type, data, parentId = 0, isPublic = false) {
@@ -14,7 +14,9 @@ class FileUploadRequest {
   }
 
   static fromRequestBody(body) {
-    const { name, type, data, parentId = 0, isPublic = false } = body;
+    const {
+      name, type, data, parentId = 0, isPublic = false,
+    } = body;
     return new FileUploadRequest(name, type, data, parentId, isPublic);
   }
 }
@@ -98,6 +100,123 @@ class FilesController {
       isPublic: addedFile.isPublic,
       parentId: addedFile.parentId,
     });
+  }
+
+  static async getShow(req, res) {
+    const { user } = req;
+    const { id } = req.params;
+    const file = await dbClient.getFileByIdandUserId(id, user._id);
+    if (!file) {
+      res.status(404).json({ error: 'Not found' });
+      res.end();
+      return;
+    }
+    res.status(200).json({
+      id: file._id,
+      userId: file.userId,
+      name: file.name,
+      type: file.type,
+      isPublic: file.isPublic,
+      parentId: file.parentId,
+    });
+  }
+
+  static async getIndex(req, res) {
+    const { user } = req;
+    const parentIdParam = req.query.parentId || 0;
+    const parentId = parseInt(parentIdParam, 10);
+    const pageParam = req.query.page || 0;
+    const page = parseInt(pageParam, 10);
+
+    const files = await dbClient.getFilesByUserIdAndParentId(
+      user._id,
+      parentId,
+      page,
+    );
+    const transformedFiles = files
+      .map((file) => ({ id: file._id, ...file }))
+      .map(({ _id, localPath, ...rest }) => rest);
+
+    res.status(200).json(transformedFiles);
+  }
+
+  static async putPublish(req, res) {
+    const { user } = req;
+    const { id } = req.params;
+    const file = await dbClient.getFileByIdandUserId(id, user._id);
+    if (!file) {
+      res.status(404).json({ error: 'Not found' });
+      res.end();
+      return;
+    }
+    const updatedFile = await dbClient.updateFileById(id, { isPublic: true });
+    res.status(200).json({
+      id: updatedFile._id,
+      userId: updatedFile.userId,
+      name: updatedFile.name,
+      type: updatedFile.type,
+      isPublic: updatedFile.isPublic,
+      parentId: updatedFile.parentId,
+    });
+  }
+
+  static async putUnPublish(req, res) {
+    const { user } = req;
+    const { id } = req.params;
+    const file = await dbClient.getFileByIdandUserId(id, user._id);
+    if (!file) {
+      res.status(404).json({ error: 'Not found' });
+      res.end();
+      return;
+    }
+    const updatedFile = await dbClient.updateFileById(id, { isPublic: false });
+    res.status(200).json({
+      id: updatedFile._id,
+      userId: updatedFile.userId,
+      name: updatedFile.name,
+      type: updatedFile.type,
+      isPublic: updatedFile.isPublic,
+      parentId: updatedFile.parentId,
+    });
+  }
+
+  static async getFile(req, res) {
+    const { user } = req;
+    const { id } = req.params;
+    let file = await dbClient.getFileById(id);
+    if (!file) {
+      res.status(404).json({ error: 'Not found' });
+      res.end();
+      return;
+    }
+    if (!file.isPublic) {
+      file = await dbClient.getFileByIdandUserId(id, user._id);
+      if (!file) {
+        res.status(404).json({ error: 'Not found' });
+        res.end();
+        return;
+      }
+    }
+    if (file.type === 'folder') {
+      res.status(400).json({ error: "A folder doesn't have content" });
+      res.end();
+      return;
+    }
+
+    if (!file.localPath) {
+      res.status(404).json({ error: 'Not found' });
+      res.end();
+      return;
+    }
+
+    const dataResult = getFileData(file.localPath);
+    if (!dataResult) {
+      res.status(404).json({ error: 'Not found' });
+      res.end();
+      return;
+    }
+
+    res.status(200).send(dataResult);
   }
 }
 

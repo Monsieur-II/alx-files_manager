@@ -52,8 +52,33 @@ class DBClient {
       .findOne({ _id: new mongoDBCore.BSON.ObjectId(id) });
   }
 
+  async getFileByIdandUserId(id, userId) {
+    return this.client
+      .db()
+      .collection('files')
+      .findOne({ _id: new mongoDBCore.BSON.ObjectId(id), userId });
+  }
+
+  async getFilesByUserIdAndParentId(userId, parentId, page) {
+    return this.client
+      .db()
+      .collection('files')
+      .find({ userId, parentId })
+      .skip(page * 20)
+      .limit(20)
+      .toArray();
+  }
+
   async addFile(data) {
     return this.client.db().collection('files').insertOne(data);
+  }
+
+  async updateFileById(id, data) {
+    await this.client
+      .db()
+      .collection('files')
+      .updateOne({ _id: new mongoDBCore.BSON.ObjectId(id) }, { $set: data });
+    return this.getFileById(id);
   }
 }
 

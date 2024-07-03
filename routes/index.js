@@ -18,5 +18,10 @@ router.get('/connect', basicAuth, AuthController.getConnect);
 router.get('/disconnect', bearerAuth, AuthController.getDisconnect);
 router.get('/users/me', bearerAuth, AuthController.getMe);
 router.post('/files', bearerAuth, FilesController.postUpload);
+router.get('/files/:id', bearerAuth, FilesController.getShow);
+router.get('/files', bearerAuth, FilesController.getIndex);
+router.put('/files/:id/publish', bearerAuth, FilesController.putPublish);
+router.put('/files/:id/unpublish', bearerAuth, FilesController.putUnPublish);
+router.get('/files/:id/data', bearerAuth, FilesController.getFile);
 
 module.exports = router;

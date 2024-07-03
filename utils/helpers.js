@@ -14,7 +14,21 @@ const saveFileToDisk = (path, data) => {
   }
 };
 
+const getFileData = (path) => {
+  try {
+    const data = fs.readFileSync(path);
+    if (!data) {
+      console.log('File not found');
+      return null;
+    }
+    return data;
+  } catch (error) {
+    return null;
+  }
+};
+
 module.exports = {
   generateHash,
   saveFileToDisk,
+  getFileData,
 };
